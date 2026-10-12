@@ -12,6 +12,16 @@ import { fileURLToPath } from 'node:url';
 
 const OPENCLI_CMD = 'opencli';
 const AUTOPAY_WINDOW_NAME_PREFIX = '__JDAUTO_AUTOPAY__:';
+/**
+ * opencli >= 1.8 的 browser 命令要求显式会话名（browser <session> <command>），
+ * 会话在首次使用时自动创建，无需生命周期管理。
+ */
+const BROWSER_SESSION = process.env['JDAUTO_OPENCLI_SESSION'] || 'jdauto';
+
+/** 构造带会话名的 browser 命令参数 */
+function browserCommand(...rest: string[]): string[] {
+  return ['browser', BROWSER_SESSION, ...rest];
+}
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -148,8 +158,8 @@ function resolveNodeExecutable(): string {
 /**
  * 执行 opencli 命令
  * 注意：--profile 是全局选项，必须放在 subcommand 前面
- * 正确: opencli --profile <name> browser open <url>
- * 错误: opencli browser open <url> --profile <name>
+ * 正确: opencli --profile <name> browser <session> open <url>
+ * 错误: opencli browser <session> open <url> --profile <name>
  */
 export async function runOpenCLI(args: string[], profile?: string, timeoutMs = 60_000): Promise<CommandResult> {
   const fullArgs = profile
@@ -210,13 +220,13 @@ export async function openAndCaptureNetwork(
   url: string,
   timeoutMs = 60_000
 ): Promise<unknown> {
-  const opened = await runOpenCLI(['browser', 'open', url], profile, timeoutMs);
+  const opened = await runOpenCLI(browserCommand('open', url), profile, timeoutMs);
   if (opened.exitCode !== 0) {
     throw new Error(`browser open failed: ${pickOutputText(opened)}`);
   }
 
   const captured = await runOpenCLI(
-    ['browser', 'network', '--all', '--raw', '--since', '30s'],
+    browserCommand('network', '--all', '--raw', '--since', '30s'),
     profile,
     timeoutMs
   );
@@ -235,10 +245,10 @@ export async function openAndCaptureNetwork(
  * 打开商品页 + 按 F5 刷新
  */
 export async function openAndRefresh(profile: string, url: string): Promise<string> {
-  const r1 = await runOpenCLI(['browser', 'open', url], profile);
+  const r1 = await runOpenCLI(browserCommand('open', url), profile);
   if (r1.exitCode !== 0) throw new Error(`browser open failed: ${r1.stderr}`);
 
-  const r2 = await runOpenCLI(['browser', 'keys', 'F5'], profile);
+  const r2 = await runOpenCLI(browserCommand('keys', 'F5'), profile);
   return r2.stdout;
 }
 
@@ -246,7 +256,7 @@ export async function openAndRefresh(profile: string, url: string): Promise<stri
  * 执行 JS 脚本
  */
 export async function evalScript(profile: string, script: string): Promise<string> {
-  const r = await runOpenCLI(['browser', 'eval', buildSafeEvalScript(script)], profile);
+  const r = await runOpenCLI(browserCommand('eval', buildSafeEvalScript(script)), profile);
   return pickOutputText(r);
 }
 
@@ -587,7 +597,7 @@ export async function addToCart(profile: string, sku: string): Promise<string> {
  * 打开购物车页面
  */
 export async function openCart(profile: string): Promise<string> {
-  const r = await runOpenCLI(['browser', 'open', 'https://cart.jd.com/cart.action'], profile);
+  const r = await runOpenCLI(browserCommand('open', 'https://cart.jd.com/cart.action'), profile);
   return pickOutputText(r);
 }
 
@@ -595,6 +605,6 @@ export async function openCart(profile: string): Promise<string> {
  * 验证 Browser Bridge 连接
  */
 export async function pingProfile(profile: string, timeoutMs = 10_000): Promise<boolean> {
-  const r = await runOpenCLI(['browser', 'tab', 'list'], profile, timeoutMs);
+  const r = await runOpenCLI(browserCommand('tab', 'list'), profile, timeoutMs);
   return r.exitCode === 0;
 }

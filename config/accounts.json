@@ -3,23 +3,11 @@
     {
       "name": "账号1",
       "profile": "账号1",
-      "browserProfileDir": "Default",
+      "browserProfileDir": "Profile 1",
+      "browserUserDataDir": "C:\\Users\\Yafinx\\AppData\\Local\\Microsoft\\Edge\\User Data",
       "chromePath": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-      "cdpPort": 9221
-    },
-    {
-      "name": "账号2",
-      "profile": "账号2",
-      "browserProfileDir": "账号3",
-      "chromePath": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-      "cdpPort": 9222
-    },
-    {
-      "name": "账号3",
-      "profile": "账号3",
-      "browserProfileDir": "账号2",
-      "chromePath": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-      "cdpPort": 9223
+      "cdpPort": 9221,
+      "opencliContextId": "fcwmcphn"
     }
   ],
   "tasks": [
